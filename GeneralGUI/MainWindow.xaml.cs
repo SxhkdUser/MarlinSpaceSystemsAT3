@@ -10,7 +10,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using static System.Net.Mime.MediaTypeNames;
-
 namespace GeneralGUI
 {
     /// <summary>
@@ -24,8 +23,12 @@ namespace GeneralGUI
         private readonly string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MalinStaffNamesV3.csv");
         public MainWindow()
         {
-            MasterFile = ReadFromCsv(path);
             InitializeComponent();
+            Loaded += MainWindow_Loaded;
+        }
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            MasterFile = ReadFromCsv(path);
             DisplayToListBox();
             SortedListBox.SelectedIndex = -1;
         }
@@ -51,9 +54,15 @@ namespace GeneralGUI
                 MessageBox.Show("CSV Not Loaded"); 
                 return;
             }
-            
-            foreach(var line in MasterFile)
+            bool opened = false;
+            foreach (var line in MasterFile)
             {
+                if (!opened && line.Key == 77 && string.IsNullOrWhiteSpace(line.Value))
+                {
+                    opened = true;
+                    OpenAdminGUI(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+                }
+                ;
                 RawListBox.Items.Add(line);
             }
         }
@@ -88,6 +97,15 @@ namespace GeneralGUI
                 SelectPopulate();
                 tabHeld = false;
             }
+
+        }
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.SystemKey == Key.A && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                OpenAdminGUI(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+                e.Handled = true; 
+            }
         }
         private void ClearStaffName()
         {
@@ -107,6 +125,42 @@ namespace GeneralGUI
             if (selected.Length > 2) return;
             IdInputTextBox.Text = selected[0].Trim();
             NameInputTextBox.Text = selected[1].Trim();
+        }
+        private void OpenAdminGUI(Input input)
+        {
+            if (input.Boxes == null) return;
+            string[] messages = [input.Boxes[0].Text, input.Boxes[1].Text];
+            AdminWindow admin = new(messages);
+            admin.Owner = this;
+            admin.ShowDialog();
+        }
+
+        
+    }
+    public partial class AdminWindow : Window
+    {
+        private string[] _message;
+        public AdminWindow(string[] messages)
+        {
+            InitializeComponent();
+            _message = messages;
+            IdInputTextBox.Text = _message[0];
+            NameInputTextBox.Text = _message[1];
+        }
+
+        private void ChangeBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DeleteBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void AddBtn_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
