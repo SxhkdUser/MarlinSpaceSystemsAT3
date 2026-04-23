@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 namespace GeneralGUI
 {
@@ -17,10 +18,9 @@ namespace GeneralGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-
         public static Dictionary<int, string>? MasterFile;
         private bool tabHeld;
-        private readonly string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MalinStaffNamesV3.csv");
+        public static readonly string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MalinStaffNamesV3.csv");
         public MainWindow()
         {
             InitializeComponent();
@@ -135,32 +135,124 @@ namespace GeneralGUI
             admin.ShowDialog();
         }
 
-        
+
     }
     public partial class AdminWindow : Window
     {
         private string[] _message;
+        private static Random random = new();
         public AdminWindow(string[] messages)
         {
             InitializeComponent();
             _message = messages;
+            PopulateBoxes();
+        }
+        private void PopulateBoxes()  
+        {
             IdInputTextBox.Text = _message[0];
             NameInputTextBox.Text = _message[1];
         }
+        private void CreateNewID(Input input)
+        {
+            if (MainWindow.MasterFile == null) return;
+            if (input?.Boxes == null || input.Boxes.Length != 2) return;
 
+            var name = input.Boxes[1].Text?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                MessageBox.Show("Name cannot be empty");
+                return;
+            }
+            
+            int value = 0;
+            do
+            {
+                value = random.Next(770000000, 779999999);
+            }
+            while (MainWindow.MasterFile.ContainsKey(value));
+            input.Boxes[0].Text = value.ToString();
+            MainWindow.MasterFile[value] = name;
+            MessageBox.Show($"{value} - {name} added to dict");
+        }
+        private void UpdateID(Input input)
+        {
+            if (MainWindow.MasterFile == null) return;
+            if (input?.Boxes == null || input.Boxes.Length != 2) return;
+            var idText = input.Boxes[0].Text;
+            var name = input.Boxes[1].Text?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                MessageBox.Show("Name cannot be empty");
+                return;
+            }
+            if (!int.TryParse(idText, out int id))
+            {
+                MessageBox.Show("Invalid ID");
+                return;
+            }
+            if (!MainWindow.MasterFile.ContainsKey(id))
+            {
+                MessageBox.Show("ID not found");
+                return;
+            }
+                MainWindow.MasterFile[id] = name;
+                MessageBox.Show($"{id} - {name} updated on to dict");
+        }
+        private void DeleteID(Input input)
+        {
+            if (MainWindow.MasterFile == null) return;
+            if (input?.Boxes == null || input.Boxes.Length != 2) return;
+            var idText = input.Boxes[0].Text;
+            if (!int.TryParse(idText, out int id))
+            {
+                MessageBox.Show("Invalid ID");
+                return;
+            }
+            if (!MainWindow.MasterFile.ContainsKey(id))
+            {
+                MessageBox.Show("ID not found");
+                return;
+            }
+            MainWindow.MasterFile.Remove(id);
+            MessageBox.Show($"{id} removed from dict");
+        }
         private void ChangeBtn_Click(object sender, RoutedEventArgs e)
         {
-
+            UpdateID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
         }
 
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
-
+            DeleteID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
         }
 
         private void AddBtn_Click(object sender, RoutedEventArgs e)
         {
+            CreateNewID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+        }
+        private void Admin_Closed(object sender, EventArgs e)
+        {
+            if (MainWindow.MasterFile == null || MainWindow.MasterFile.Count == 0)
+                return;
 
+            try
+            {
+                var lines = MainWindow.MasterFile
+                    .Select(kvp => $"{kvp.Key},{kvp.Value}");
+
+                File.WriteAllLines(MainWindow.path, lines);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save data: {ex.Message}");
+            }
+        }
+        private void AdminWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Alt)
+            {
+                this.Close();
+            }
         }
     }
 }
