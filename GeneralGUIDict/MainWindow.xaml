@@ -10,7 +10,7 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         >
     <Grid>
-        <ListBox x:Name="RawListBox" HorizontalAlignment="Left" Height="400" VerticalAlignment="Top" Width="385"  Focusable="False" IsHitTestVisible="False" Margin="10,10,0,0"/>
+        <ListBox x:Name="RawListBox" HorizontalAlignment="Left" Height="400" VerticalAlignment="Top" Width="294"  Focusable="False" IsHitTestVisible="True" Margin="106,10,0,0" SelectionChanged="Selected_Raw"/>
         <ListBox x:Name="SortedListBox" HorizontalAlignment="Left" Height="352" Margin="400,58,0,0" VerticalAlignment="Top" Width="371" RenderTransformOrigin="0.5,0.5">
             <ListBox.RenderTransform>
                 <TransformGroup>
@@ -25,6 +25,7 @@
         <TextBox x:Name="IdInputTextBox" HorizontalAlignment="Left" Height="19" Margin="474,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="287" TextChanged="IdInputTextBox_TextChanged"/>
         <Label Content="StaffName" HorizontalAlignment="Left" Height="24" Margin="405,26,0,0" VerticalAlignment="Top" Width="64"/>
         <Label Content="StaffID" HorizontalAlignment="Left" Height="24" Margin="421,5,0,0" VerticalAlignment="Top" Width="48"/>
+        <Label Content="Hotkeys:&#xD;&#xA;N + Ctrl: Clear&#xD;&#xA; and focus &#xD;&#xA; staff name&#xD;&#xA;S + Ctrl: Clear&#xD;&#xA; and focus &#xD;&#xA; staff id&#xD;&#xA;K + Tab: Display&#xD;&#xA; Selected item&#xD;&#xA; in textboxes&#xD;&#xA;A + Alt: Display&#xD;&#xA; Admin&#xD;&#xA; Window &#xD;&#xA;&#xD;&#xA;&#xD;&#xA;" HorizontalAlignment="Left" Height="400" Margin="5,10,0,0" VerticalAlignment="Top" Width="96"/>
     </Grid>
 
 </Window>

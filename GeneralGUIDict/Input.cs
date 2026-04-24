@@ -9,7 +9,14 @@ namespace GeneralGUI
 {
     public class Input
     {
-        public TextBox[]? Boxes { get; set; }// Collection of Textboxes
+        // Constructor to populate properties 
+        public Input(TextBox[] boxes) 
+        {
+            IDBox = boxes[0];
+            NameBox = boxes[1];
+        }
+        public TextBox? IDBox { get;} // Id TextBox
+        public TextBox? NameBox { get; } // Name TextBox
         public double MinValue { get; set; } = double.MinValue; // MinValue an input can be
         public double InvalidValue { get; set; } = double.MinValue; // Value that cannot be in calculation
     }

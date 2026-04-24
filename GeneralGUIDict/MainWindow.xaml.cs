@@ -18,9 +18,15 @@ namespace GeneralGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        public static Dictionary<int, string>? MasterFile;
-        private bool tabHeld;
+        // Path to CSV file being loaded
         public static readonly string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MalinStaffNamesV3.csv");
+
+        // Dictionary Containing CSV data 
+        public static Dictionary<int, string> MasterFile = new();
+
+        // Flag for tab pressed
+        private bool tabHeld;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -28,13 +34,19 @@ namespace GeneralGUI
         }
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // Loads data to CSV
             MasterFile = ReadFromCsv(path);
-            DisplayToListBox();
-            SortedListBox.SelectedIndex = -1;
-        }
-        private void NameInputTextBox_TextChanged(object sender, TextChangedEventArgs e) => DisplayToSorted(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
 
-        private void IdInputTextBox_TextChanged(object sender, TextChangedEventArgs e) => DisplayToSorted(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+            // Displays CSV data to listbox and unselects by default
+            DisplayToListBox();
+            SortedListBox.SelectedIndex = -1;          
+        }
+
+        // Changes content of sorted listview by searching data based upon Nametextbox
+        private void NameInputTextBox_TextChanged(object sender, TextChangedEventArgs e) => DisplayToSorted(input: new Input([IdInputTextBox, NameInputTextBox]));
+
+        // Changes content of sorted listview by searching data based upon Idtextbox
+        private void IdInputTextBox_TextChanged(object sender, TextChangedEventArgs e) => DisplayToSorted(input: new Input([IdInputTextBox, NameInputTextBox]));
         private Dictionary<int,string> ReadFromCsv(string CsvPath)
         {
             Dictionary<int, string> dict = [];
@@ -49,92 +61,99 @@ namespace GeneralGUI
         }
         private void DisplayToListBox()
         {
-            if (MasterFile == null || MasterFile.Count == 0)
-            {
-                MessageBox.Show("CSV Not Loaded"); 
-                return;
-            }
+            if (!ErrorHelper.GenericError(() => MasterFile.Count == 0, "Error: Textboxes not loaded or CSV not loaded")) return;
             bool opened = false;
             foreach (var line in MasterFile)
             {
-                if (!opened && line.Key == 77 && string.IsNullOrWhiteSpace(line.Value))
+                // Opens admin window if value with key of 77 is empty 
+                if (!opened && line.Key.ToString().StartsWith("77") && string.IsNullOrWhiteSpace(line.Value))
                 {
                     opened = true;
-                    OpenAdminGUI(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
-                }
-                ;
+                    OpenAdminGUI(input: new Input([IdInputTextBox, NameInputTextBox]));
+                };               
                 RawListBox.Items.Add(line);
             }
         }
         private void DisplayToSorted(Input input)
         {
-            if (input.Boxes == null) return;
+            if (!ErrorHelper.GenericError(() => input.IDBox == null || input.NameBox == null || MasterFile.Count == 0, "Error: Textboxes not loaded or CSV not loaded")) return;
             SortedListBox.Items.Clear();
             var results = new HashSet<(int,string)>();
-            if (input.Boxes.Length != 2 || input.Boxes == null) return;
-            if (MasterFile == null) return ;
-            var IdText = input.Boxes[0].Text.Trim();
-            var NameText = input.Boxes[1].Text.Trim() ?? "";
-            foreach (var result in MasterFile)
+            var IdText = input.IDBox!.Text.Trim();
+            var NameText = input.NameBox!.Text.Trim();
+            foreach (var result in MasterFile!)
             {
+                // Affirms if found values in dict contain value from both textboxes
                 if (result.Key.ToString().Contains(IdText) && result.Value.Contains(NameText, StringComparison.OrdinalIgnoreCase)) results.Add((result.Key,result.Value));                      
             }
             foreach (var item in results)
             {
+                // Formats and adds items to listbox
                 SortedListBox.Items.Add($"{item.Item1} - {item.Item2}");
             }
         }
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control) ClearStaffName();
+            // Clears and focuses NameTextBox
+            if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control) ClearStaff(action: () => { NameInputTextBox.Clear(); NameInputTextBox.Focus(); } );
 
-            if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control) ClearStaffID();
+            // Clears and focuses IdTextBox
+            if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control) ClearStaff(action: () => { IdInputTextBox.Clear(); IdInputTextBox.Focus(); });
 
+            // Sets Flag bc wpf doesnt handle tab very well
             if (e.Key == Key.Tab) tabHeld = true;
             
+            // Adds selected item of sortedlistbox to both textboxes
             if (e.Key == Key.K && tabHeld) 
             {
                 SelectPopulate();
                 tabHeld = false;
             }
-
         }
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // Opens AdminWindow
             if (e.SystemKey == Key.A && Keyboard.Modifiers == ModifierKeys.Alt)
             {
-                OpenAdminGUI(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+                OpenAdminGUI(input: new Input([IdInputTextBox, NameInputTextBox]));
                 e.Handled = true; 
             }
         }
-        private void ClearStaffName()
+        // Generic Method for clearing textboxes and focusing them
+        private void ClearStaff(Action action)
         {
-            NameInputTextBox.Clear();
-            NameInputTextBox.Focus();
-        }
-        private void ClearStaffID()
-        {
-            IdInputTextBox.Clear();
-            IdInputTextBox.Focus();
+            action();
         }
         private void SelectPopulate()
         {
-            if(SortedListBox.Items.Count == 0) return;
-            if(SortedListBox.SelectedItem == null) return;
+            if (!ErrorHelper.GenericError(() => SortedListBox.Items.Count == 0 && SortedListBox.SelectedItem == null, "Error: Item not selected or Data not loaded")) return;
+
+            //  Gets both values by seperating them based on - 
             string[] selected = SortedListBox.SelectedItem.ToString().Split("-");
+
+            // Makes sure no more than 2 values are in collection
             if (selected.Length > 2) return;
             IdInputTextBox.Text = selected[0].Trim();
             NameInputTextBox.Text = selected[1].Trim();
         }
         private void OpenAdminGUI(Input input)
         {
-            if (input.Boxes == null) return;
-            string[] messages = [input.Boxes[0].Text, input.Boxes[1].Text];
+            if (!ErrorHelper.GenericError(() => input.IDBox == null || input.NameBox == null || string.IsNullOrEmpty(input.IDBox.Text) || string.IsNullOrEmpty(input.NameBox.Text), "Error: TextBoxes not loaded or Data not entered")) return;
+            string[] messages = [input.IDBox.Text, input.NameBox.Text];
+
+            // Makes instance of window and passes in values of current windows textboxes
             AdminWindow admin = new(messages);
             admin.Owner = this;
+
+            // Shows Admin Window 
             admin.ShowDialog();
         }
 
+        // Makes RawListBox unselectable/readonly
+        private void Selected_Raw(object sender, EventArgs e)
+        {
+            RawListBox.SelectedItem = null;
+        }
 
     }
     public partial class AdminWindow : Window
@@ -143,6 +162,8 @@ namespace GeneralGUI
         private static Random random = new();
         public AdminWindow(string[] messages)
         {
+            if (messages == null || messages.Length < 2) throw new ArgumentException("Messages must contain atleast 2 values");
+            if (string.IsNullOrWhiteSpace(messages[0]) || string.IsNullOrWhiteSpace(messages[1])) throw new ArgumentException("Messages cannot be empty");
             InitializeComponent();
             _message = messages;
             PopulateBoxes();
@@ -154,32 +175,32 @@ namespace GeneralGUI
         }
         private void CreateNewID(Input input)
         {
-            if (MainWindow.MasterFile == null) return;
-            if (input?.Boxes == null || input.Boxes.Length != 2) return;
-
-            var name = input.Boxes[1].Text?.Trim();
+            if (!ErrorHelper.GenericError(() =>  MainWindow.MasterFile.Count == 0 || input.IDBox == null || input.NameBox == null || string.IsNullOrEmpty(input.NameBox.Text), "Data not loaded or Text is Empty")) return;
+            var name = input.NameBox.Text?.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
                 MessageBox.Show("Name cannot be empty");
                 return;
-            }
-            
+            }            
             int value = 0;
+            
+            // Tries to find a value that is not a dict.key
             do
             {
                 value = random.Next(770000000, 779999999);
             }
             while (MainWindow.MasterFile.ContainsKey(value));
-            input.Boxes[0].Text = value.ToString();
+            input.IDBox.Text = value.ToString();
+
+            // Adds Value to dict and displays it to user
             MainWindow.MasterFile[value] = name;
             MessageBox.Show($"{value} - {name} added to dict");
         }
         private void UpdateID(Input input)
         {
-            if (MainWindow.MasterFile == null) return;
-            if (input?.Boxes == null || input.Boxes.Length != 2) return;
-            var idText = input.Boxes[0].Text;
-            var name = input.Boxes[1].Text?.Trim();
+            if (!ErrorHelper.GenericError(() => MainWindow.MasterFile.Count == 0 || input.IDBox == null || input.NameBox == null || string.IsNullOrEmpty(input.NameBox.Text), "Data not loaded or Text is Empty")) return;
+            var idText = input.IDBox.Text;
+            var name = input.NameBox.Text?.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
                 MessageBox.Show("Name cannot be empty");
@@ -195,14 +216,15 @@ namespace GeneralGUI
                 MessageBox.Show("ID not found");
                 return;
             }
-                MainWindow.MasterFile[id] = name;
-                MessageBox.Show($"{id} - {name} updated on to dict");
+
+            // Updates item at id that does exist in dict
+            MainWindow.MasterFile[id] = name;
+            MessageBox.Show($"{id} - {name} updated on to dict");
         }
         private void DeleteID(Input input)
         {
-            if (MainWindow.MasterFile == null) return;
-            if (input?.Boxes == null || input.Boxes.Length != 2) return;
-            var idText = input.Boxes[0].Text;
+            if (!ErrorHelper.GenericError(() => MainWindow.MasterFile.Count == 0 || input.IDBox == null || input.NameBox == null || string.IsNullOrEmpty(input.NameBox.Text), "Data not loaded or Text is Empty")) return;
+            var idText = input.IDBox.Text;
             if (!int.TryParse(idText, out int id))
             {
                 MessageBox.Show("Invalid ID");
@@ -213,33 +235,31 @@ namespace GeneralGUI
                 MessageBox.Show("ID not found");
                 return;
             }
+            // Removes item from dict
             MainWindow.MasterFile.Remove(id);
             MessageBox.Show($"{id} removed from dict");
         }
         private void ChangeBtn_Click(object sender, RoutedEventArgs e)
         {
-            UpdateID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+            UpdateID(input: new Input ([IdInputTextBox, NameInputTextBox]));
         }
 
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
-            DeleteID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+            DeleteID(input: new Input ([IdInputTextBox, NameInputTextBox]));
         }
 
         private void AddBtn_Click(object sender, RoutedEventArgs e)
         {
-            CreateNewID(input: new Input { Boxes = [IdInputTextBox, NameInputTextBox] });
+            CreateNewID(input: new Input ([IdInputTextBox, NameInputTextBox]));
         }
         private void Admin_Closed(object sender, EventArgs e)
         {
-            if (MainWindow.MasterFile == null || MainWindow.MasterFile.Count == 0)
-                return;
-
+            if (ErrorHelper.GenericError(() => MainWindow.MasterFile.Count == 0, "Data not loaded or Text is Empty")) return;
             try
             {
                 var lines = MainWindow.MasterFile
                     .Select(kvp => $"{kvp.Key},{kvp.Value}");
-
                 File.WriteAllLines(MainWindow.path, lines);
             }
             catch (Exception ex)

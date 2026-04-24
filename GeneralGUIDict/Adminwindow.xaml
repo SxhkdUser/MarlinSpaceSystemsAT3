@@ -25,5 +25,6 @@
         <Button  HorizontalAlignment="Left" Height="48" Margin="449,146,0,0" VerticalAlignment="Top" Width="55" RenderTransformOrigin="0.539,0.696" x:Name="ChangeBtn" Click="ChangeBtn_Click"  Content="Change"/>
         <Button  HorizontalAlignment="Center" Height="32" Margin="0,210,0,0" VerticalAlignment="Top" Width="98" RenderTransformOrigin="0.539,0.696" x:Name="DeleteBtn" Click="DeleteBtn_Click"  Content="Delete"/>
         <Button  HorizontalAlignment="Center" Height="32" Margin="0,112,0,0" VerticalAlignment="Top" Width="98" RenderTransformOrigin="0.539,0.696" x:Name="AddBtn_Copy" Click="AddBtn_Click"  Content="Add"/>
+        <Label Content="Hotkeys:&#xD;&#xA; Alt + L Close&#xD;&#xA; and Save &#xD;&#xA; Changes&#xD;&#xA;" HorizontalAlignment="Center" Height="75" Margin="0,256,0,0" VerticalAlignment="Top" Width="98"/>
     </Grid>
 </Window>
