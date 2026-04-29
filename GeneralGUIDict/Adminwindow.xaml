@@ -3,8 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Closed="Admin_Closed"
-        KeyDown="AdminWindow_KeyDown"
+        PreviewKeyDown="AdminWindow_KeyDown"
         Title="Admin">
     <Grid>
         <ListBox x:Name="RawListBox" HorizontalAlignment="Left" Height="400" VerticalAlignment="Top" Width="385"  Focusable="False" IsHitTestVisible="False" Margin="10,10,0,0" Visibility="Hidden"/>
@@ -18,7 +17,7 @@
                 </TransformGroup>
             </ListBox.RenderTransform>
         </ListBox>
-        <TextBox x:Name="NameInputTextBox" HorizontalAlignment="Center" Height="21" Margin="0,176,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="98" IsReadOnly="True" />
+        <TextBox x:Name="NameInputTextBox" HorizontalAlignment="Center" Height="21" Margin="0,176,0,0" TextWrapping="Wrap"  VerticalAlignment="Top" Width="98" />
         <TextBox x:Name="IdInputTextBox" HorizontalAlignment="Center" Height="21" Margin="0,149,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="98" IsReadOnly="True"/>
         <Label Content="StaffName" HorizontalAlignment="Left" Height="27" Margin="264,167,0,0" VerticalAlignment="Top" Width="77"/>
         <Label Content="StaffID" HorizontalAlignment="Left" Height="27" Margin="294,143,0,0" VerticalAlignment="Top" Width="47"/>

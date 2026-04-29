@@ -1,16 +1,9 @@
-﻿using System.IO;
-using System.Text;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Xml.Linq;
-using static System.Net.Mime.MediaTypeNames;
+
 namespace GeneralGUI
 {
     /// <summary>
@@ -19,7 +12,8 @@ namespace GeneralGUI
     public partial class MainWindow : Window
     {
         // Path to CSV file being loaded
-        public static readonly string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MalinStaffNamesV3.csv");
+
+        public static readonly string path = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\MalinStaffNamesV3.csv"));
 
         // Dictionary Containing CSV data 
         public static Dictionary<int, string> MasterFile = new();
@@ -50,17 +44,28 @@ namespace GeneralGUI
         private Dictionary<int,string> ReadFromCsv(string CsvPath)
         {
             Dictionary<int, string> dict = [];
-            if (!File.Exists(CsvPath)) throw new FileNotFoundException($"CSV not found at{CsvPath}");
+            if (!File.Exists(CsvPath)) 
+            {
+                MessageBox.Show("CSV file not found: " + CsvPath);
+                return dict; 
+            }
             foreach (string line in File.ReadAllLines(CsvPath))
             {
-                string[] column = line.Split(',');
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var  column = line.Split(',');
+                if (column.Length < 2) 
+                {
+                    Debug.WriteLine($"Skipped malformed line: {line}");
+                    continue;
+                }
                 if (!int.TryParse(column[0], out int value)) continue;
-                dict.Add(value, column[1]);                
+                dict[value] = column[1];            
             }
             return dict;
         }
         private void DisplayToListBox()
         {
+            RawListBox.Items.Clear();
             if (!ErrorHelper.GenericError(() => MasterFile.Count == 0, "Error: Textboxes not loaded or CSV not loaded")) return;
             bool opened = false;
             foreach (var line in MasterFile)
@@ -69,9 +74,11 @@ namespace GeneralGUI
                 if (!opened && line.Key.ToString().StartsWith("77") && string.IsNullOrWhiteSpace(line.Value))
                 {
                     opened = true;
+                    IdInputTextBox.Text = line.Key.ToString();
+                    NameInputTextBox.Text = "Enter Name!";
                     OpenAdminGUI(input: new Input([IdInputTextBox, NameInputTextBox]));
                 };               
-                RawListBox.Items.Add(line);
+                RawListBox.Items.Add($"{line.Key} - {line.Value}");
             }
         }
         private void DisplayToSorted(Input input)
@@ -126,7 +133,7 @@ namespace GeneralGUI
         }
         private void SelectPopulate()
         {
-            if (!ErrorHelper.GenericError(() => SortedListBox.Items.Count == 0 && SortedListBox.SelectedItem == null, "Error: Item not selected or Data not loaded")) return;
+            if (!ErrorHelper.GenericError(() => SortedListBox.Items.Count == 0 || SortedListBox.SelectedItem == null, "Error: Item not selected or Data not loaded")) return;
 
             //  Gets both values by seperating them based on - 
             string[] selected = SortedListBox.SelectedItem.ToString().Split("-");
@@ -253,24 +260,14 @@ namespace GeneralGUI
         {
             CreateNewID(input: new Input ([IdInputTextBox, NameInputTextBox]));
         }
-        private void Admin_Closed(object sender, EventArgs e)
-        {
-            if (ErrorHelper.GenericError(() => MainWindow.MasterFile.Count == 0, "Data not loaded or Text is Empty")) return;
-            try
-            {
-                var lines = MainWindow.MasterFile
-                    .Select(kvp => $"{kvp.Key},{kvp.Value}");
-                File.WriteAllLines(MainWindow.path, lines);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save data: {ex.Message}");
-            }
-        }
+        private void SaveOnCLose(string path) => File.WriteAllLines(path, MainWindow.MasterFile.Select(kvp => $"{kvp.Key},{kvp.Value}"));
+
         private void AdminWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Alt)
+            if (e.SystemKey == Key.L && Keyboard.Modifiers == ModifierKeys.Alt)
             {
+                e.Handled = true;
+                SaveOnCLose(MainWindow.path);
                 this.Close();
             }
         }
